@@ -6,6 +6,8 @@ DESTDIR=bin
 TARGETNAME=Lox
 TARGET=$(MAINPATH)/$(TARGETNAME)
 
+SRCS=$(wildcard $(SRCDIR)/$(MAINPATH)/*.java)
+
 .PHONY: all
 all:	$(DESTDIR)/$(TARGET).class
 
@@ -17,9 +19,9 @@ run:	$(DESTDIR)/$(TARGET).class
 clean:
 	rm -rf $(DESTDIR)
 
-$(DESTDIR)/$(TARGET).class:	$(SRCDIR)/$(TARGET).java
+$(DESTDIR)/$(TARGET).class:	$(SRCS)
 	mkdir -p $(DESTDIR)
-	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $<
+	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $(SRCDIR)/$(TARGET).java
 
 
 ####

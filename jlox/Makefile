@@ -28,7 +28,7 @@ $(DESTDIR)/$(TARGET).class:	$(SRCS)
 
 GENERATEAST=$(DOMAIN)/tool/GenerateAst
 
-gen-expr:	$(SRCDIR)/$(MAINPATH)/Expr.java
+gen-ast:	$(SRCDIR)/$(MAINPATH)/Expr.java
 
 $(SRCDIR)/$(MAINPATH)/Expr.java:	$(DESTDIR)/$(GENERATEAST).class
 	java -classpath $(DESTDIR) $(GENERATEAST) $(SRCDIR)/$(MAINPATH)

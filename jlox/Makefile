@@ -21,8 +21,8 @@ clean:
 
 $(DESTDIR)/$(TARGET).class:	$(SRCS)
 	mkdir -p $(DESTDIR)
-	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $(SRCDIR)/$(TARGET).java
-
+	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $(SRCDIR)/$(TARGET).java || \
+	  (rm -f $@; exit 1)
 
 ####
 
@@ -35,4 +35,5 @@ $(SRCDIR)/$(MAINPATH)/Expr.java:	$(DESTDIR)/$(GENERATEAST).class
 
 $(DESTDIR)/$(GENERATEAST).class:	$(SRCDIR)/$(GENERATEAST).java
 	mkdir -p $(DESTDIR)
-	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $<
+	javac -d $(DESTDIR) -sourcepath $(SRCDIR) $< || \
+	  (rm -rf $@; exit 1)

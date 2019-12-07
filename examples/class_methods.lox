@@ -1,0 +1,7 @@
+class Bagel {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bagel().eat();

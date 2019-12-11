@@ -32,6 +32,7 @@ static void runtimeError(const char* format, ...) {
 void initVM(void) {
   resetStack();
   vm.objects = NULL;
+  initTable(&vm.strings);
 }
 
 void freeVM(void) {

@@ -148,6 +148,10 @@ static void declaration(void);
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
+static uint8_t identifierConstant(Token* name) {
+  return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
 static void grouping(void) {
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
@@ -161,6 +165,15 @@ static void number(void) {
 static void string(void) {
   emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
                                   parser.previous.length - 2)));
+}
+
+static void namedVariable(Token name) {
+  uint8_t arg = identifierConstant(&name);
+  emitBytes(OP_GET_GLOBAL, arg);
+}
+
+static void variable(void) {
+  namedVariable(parser.previous);
 }
 
 static void binary(void) {
@@ -233,7 +246,7 @@ ParseRule rules[] = {
   { NULL,     binary,  PREC_EQUALITY },   // TOKEN_GREATER_EQUAL
   { NULL,     binary,  PREC_EQUALITY },   // TOKEN_LESS
   { NULL,     binary,  PREC_EQUALITY },   // TOKEN_LESS_EQUAL
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
+  { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
   { string,   NULL,    PREC_NONE },       // TOKEN_STRING
   { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
   { NULL,     NULL,    PREC_NONE },       // TOKEN_AND
@@ -277,8 +290,30 @@ static void parsePrecedence(Precedence precedence) {
   }
 }
 
+static uint8_t parseVariable(const char* errorMessage) {
+  consume(TOKEN_IDENTIFIER, errorMessage);
+  return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(uint8_t global) {
+  emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
 static void expression(void) {
   parsePrecedence(PREC_ASSIGNMENT);
+}
+
+static void varDeclaration(void) {
+  uint8_t global = parseVariable("Expect variable name.");
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emitByte(OP_NIL);
+  }
+  consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+  defineVariable(global);
 }
 
 static void expressionStatement(void) {
@@ -320,7 +355,11 @@ static void synchronize(void) {
 }
 
 static void declaration(void) {
-  statement();
+  if (match(TOKEN_VAR)) {
+    varDeclaration();
+  } else {
+    statement();
+  }
 
   if (parser.panicMode)
     synchronize();

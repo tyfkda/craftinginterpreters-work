@@ -275,9 +275,21 @@ static InterpretResult run(void) {
       break;
     }
 
-    case OP_RETURN:
-      // Exit interpreter.
-      return INTERPRET_OK;
+    case OP_RETURN: {
+      Value result = pop();
+
+      --vm.frameCount;
+      if (vm.frameCount == 0) {
+        pop();
+        return INTERPRET_OK;
+      }
+
+      vm.stackTop = frame->slots;
+      push(result);
+
+      frame = &vm.frames[vm.frameCount - 1];
+      break;
+    }
     }
   }
 

@@ -1,3 +1,5 @@
+//use std::process;
+
 mod chunk;
 mod debug;
 mod value;
@@ -6,6 +8,26 @@ mod vm;
 use self::chunk::{OpCode, initChunk, writeChunk, addConstant};
 use self::debug::disassembleChunk;
 use self::vm::{/*initVM,*/ interpret};
+
+/*
+fn main() {
+    loop {
+        let mut line = String::new();
+        match std::io::stdin().read_line(&mut line) {
+            Ok(0) => {
+                break;
+            }
+            Ok(n) => {
+                print!("{}: {}", n, line);
+            }
+            Err(error) => {
+                println!("err: {}", error);
+                process::exit(1);
+            }
+        }
+    }
+}
+ */
 
 fn main() {
     let mut chunk = initChunk();

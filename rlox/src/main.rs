@@ -1,54 +1,64 @@
-//use std::process;
+#![allow(non_snake_case)]
+
+use std::env;
+use std::fs;
+use std::io::{self, BufRead, Write};
 
 mod chunk;
+mod compiler;
 mod debug;
+mod scanner;
 mod value;
 mod vm;
 
-use self::chunk::{OpCode, initChunk, writeChunk, addConstant};
-use self::debug::disassembleChunk;
-use self::vm::{/*initVM,*/ interpret};
+use self::vm::{interpret, InterpretResult};
 
-/*
 fn main() {
-    loop {
-        let mut line = String::new();
-        match std::io::stdin().read_line(&mut line) {
-            Ok(0) => {
-                break;
-            }
-            Ok(n) => {
-                print!("{}: {}", n, line);
-            }
-            Err(error) => {
-                println!("err: {}", error);
-                process::exit(1);
-            }
-        }
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() == 1 {
+        repl();
+    } else if args.len() == 2 {
+        runFile(&args[1]);
+    } else {
+        panic!("Usage: rlox [path]");
     }
 }
- */
 
-fn main() {
-    let mut chunk = initChunk();
-    let constant = addConstant(&mut chunk, 1.2);
-    writeChunk(&mut chunk, OpCode::CONSTANT as u8, 123);
-    writeChunk(&mut chunk, constant as u8, 123);
+fn repl() -> Result<(), std::io::Error> {
+    let stdin = io::stdin();
+    let mut line = String::new();
+    loop {
+        print!("> ");
+        io::stdout().flush()?;
+        line.clear();
+        stdin.lock().read_line(&mut line)?;
 
-    let constant = addConstant(&mut chunk, 3.4);
-    writeChunk(&mut chunk, OpCode::CONSTANT as u8, 123);
-    writeChunk(&mut chunk, constant as u8, 123);
+        line.push_str("\0");
+        interpret(&line);
+    }
+}
 
-    writeChunk(&mut chunk, OpCode::ADD as u8, 123);
+fn runFile(path: &str) -> Result<(), InterpretResult> {
+    let source = readFile(path).map_err(|_| InterpretResult::COMPILE_ERROR)?;
+    let result = interpret(&source);
 
-    let constant = addConstant(&mut chunk, 5.6);
-    writeChunk(&mut chunk, OpCode::CONSTANT as u8, 123);
-    writeChunk(&mut chunk, constant as u8, 123);
+    match result {
+        InterpretResult::OK => { Ok(()) }
+        InterpretResult::COMPILE_ERROR => { Err(result) }
+        InterpretResult::RUNTIME_ERROR => { Err(result) }
+    }
+}
 
-    writeChunk(&mut chunk, OpCode::DIVIDE as u8, 123);
-    writeChunk(&mut chunk, OpCode::NEGATE as u8, 123);
-
-    writeChunk(&mut chunk, OpCode::RETURN as u8, 123);
-    disassembleChunk(&mut chunk, "test chunk");
-    interpret(&chunk);
+fn readFile(path: &str) -> Result<String, std::io::Error> {
+    match fs::read(path) {
+        Result::Ok(buffer) => {
+            let mut s = String::from_utf8(buffer).unwrap();
+            s.push_str("\0");
+            Ok(s)
+        },
+        Result::Err(err) => {
+            Err(err)
+        }
+    }
 }

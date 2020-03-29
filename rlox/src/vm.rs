@@ -1,10 +1,9 @@
-#![allow(non_snake_case)]
+#![allow(non_camel_case_types, non_snake_case)]
 
 use num_traits::FromPrimitive;
 
-use std::mem::MaybeUninit;
-
 use super::chunk::{Chunk, OpCode};
+use super::compiler::{compile};
 use super::debug::{disassembleInstruction, printValue};
 use super::value::Value;
 
@@ -23,21 +22,9 @@ struct VM<'a> {
     stackTop: usize,
 }
 
-pub fn interpret<'a>(chunk: &'a Chunk) -> InterpretResult {
-    let mut stack: [MaybeUninit<Value>; STACK_MAX] = unsafe { MaybeUninit::uninit().assume_init() };
-    for (_i, slot) in stack.iter_mut().enumerate() {
-        *slot = MaybeUninit::new(0.0);
-    }
-    let stack = unsafe { std::mem::transmute::<_, [Value; STACK_MAX]>(stack) };
-
-    let mut vm = VM {
-        chunk,
-        ip: &chunk.code,
-        stack,
-        stackTop: 0,
-    };
-
-    run(&mut vm)
+pub fn interpret<'a>(source: &'a str) -> InterpretResult {
+    compile(source);
+    InterpretResult::OK
 }
 
 fn resetStack(vm: &mut VM) {

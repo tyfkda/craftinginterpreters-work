@@ -54,6 +54,12 @@ fn pop(vm: &mut VM) -> Value {
     vm.stack[vm.stackTop]
 }
 
+fn binary_op(vm: &mut VM, op: fn(Value, Value) -> Value) {
+    let b = pop(vm);
+    let a = pop(vm);
+    push(vm, op(a, b));
+}
+
 fn run(vm: &mut VM) -> InterpretResult {
     loop {
         print!("          ");
@@ -70,6 +76,14 @@ fn run(vm: &mut VM) -> InterpretResult {
             OpCode::CONSTANT => {
                 let constant = READ_CONSTANT(vm);
                 push(vm, constant);
+            }
+            OpCode::ADD => { binary_op(vm, |a, b| a + b); }
+            OpCode::SUBTRACT => { binary_op(vm, |a, b| a - b); }
+            OpCode::MULTIPLY => { binary_op(vm, |a, b| a * b); }
+            OpCode::DIVIDE => { binary_op(vm, |a, b| a / b); }
+            OpCode::NEGATE => {
+                let v = pop(vm);
+                push(vm, -v);
             }
             OpCode::RETURN => {
                 printValue(pop(vm));

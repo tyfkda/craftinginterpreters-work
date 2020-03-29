@@ -7,6 +7,11 @@ use super::value::{Value, ValueArray, initValueArray, writeValueArray};
 #[derive(FromPrimitive)]
 pub enum OpCode {
     CONSTANT,
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+    NEGATE,
     RETURN,
 }
 

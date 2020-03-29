@@ -27,6 +27,21 @@ pub fn disassembleInstruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::CONSTANT => {
             constantInstruction("OP_CONSTANT", chunk, offset)
         }
+        OpCode::ADD => {
+            simpleInstruction("OP_ADD", offset)
+        }
+        OpCode::SUBTRACT => {
+            simpleInstruction("OP_SUBTRACT", offset)
+        }
+        OpCode::MULTIPLY => {
+            simpleInstruction("OP_MULTIPLY", offset)
+        }
+        OpCode::DIVIDE => {
+            simpleInstruction("OP_DIVIDE", offset)
+        }
+        OpCode::NEGATE => {
+            simpleInstruction("OP_NEGATE", offset)
+        }
         OpCode::RETURN => {
             simpleInstruction("OP_RETURN", offset)
         }

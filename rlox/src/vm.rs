@@ -8,8 +8,7 @@ use super::debug::{disassembleInstruction, printValue};
 use super::value::Value;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum InterpretResult {
-    OK,
+pub enum InterpretError {
     COMPILE_ERROR,
     RUNTIME_ERROR,
 }
@@ -23,10 +22,10 @@ struct VM<'a> {
     stackTop: usize,
 }
 
-pub fn interpret<'a>(source: &'a str) -> InterpretResult {
+pub fn interpret<'a>(source: &'a str) -> Result<(), InterpretError> {
     let mut chunk = initChunk();
     if !compile(source, &mut chunk) {
-        return InterpretResult::COMPILE_ERROR;
+        return Err(InterpretError::COMPILE_ERROR);
     }
 
     let mut vm = VM {
@@ -59,7 +58,7 @@ fn binary_op(vm: &mut VM, op: fn(Value, Value) -> Value) {
     push(vm, op(a, b));
 }
 
-fn run(vm: &mut VM) -> InterpretResult {
+fn run(vm: &mut VM) -> Result<(), InterpretError> {
     loop {
         print!("          ");
         for i in 0..vm.stackTop {
@@ -87,7 +86,7 @@ fn run(vm: &mut VM) -> InterpretResult {
             OpCode::RETURN => {
                 printValue(pop(vm));
                 print!("\n");
-                return InterpretResult::OK;
+                return Ok(())
             }
         }
     }

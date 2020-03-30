@@ -11,7 +11,7 @@ mod scanner;
 mod value;
 mod vm;
 
-use self::vm::{interpret, InterpretResult};
+use self::vm::{interpret, InterpretError};
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -37,19 +37,15 @@ fn repl() -> Result<(), std::io::Error> {
         stdin.lock().read_line(&mut line)?;
 
         line.push_str("\0");
-        interpret(&line);
+        if let Err(_e) = interpret(&line) {
+            // Ignore.
+        }
     }
 }
 
-fn runFile(path: &str) -> Result<(), InterpretResult> {
-    let source = readFile(path).map_err(|_| InterpretResult::COMPILE_ERROR)?;
-    let result = interpret(&source);
-
-    match result {
-        InterpretResult::OK => { Ok(()) }
-        InterpretResult::COMPILE_ERROR => { Err(result) }
-        InterpretResult::RUNTIME_ERROR => { Err(result) }
-    }
+fn runFile(path: &str) -> Result<(), InterpretError> {
+    let source = readFile(path).map_err(|_| InterpretError::COMPILE_ERROR)?;
+    interpret(&source)
 }
 
 fn readFile(path: &str) -> Result<String, std::io::Error> {

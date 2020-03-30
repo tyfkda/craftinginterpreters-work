@@ -13,16 +13,18 @@ mod vm;
 
 use self::vm::{interpret, InterpretResult};
 
-fn main() {
+fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() == 1 {
-        repl();
+        repl().map_err(|e| format!("{:?}", e))?;
     } else if args.len() == 2 {
-        runFile(&args[1]);
+        runFile(&args[1]).map_err(|e| format!("{:?}", e))?;
     } else {
         panic!("Usage: rlox [path]");
     }
+
+    Ok(())
 }
 
 fn repl() -> Result<(), std::io::Error> {

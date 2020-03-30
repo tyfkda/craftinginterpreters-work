@@ -30,13 +30,14 @@ pub enum TokenType {
 pub struct Scanner<'a> {
     start: &'a str,
     current: usize,
-    line: i32,
+    line: u32,
 }
 
+#[derive(Clone, Debug)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub start: &'a str,
-    pub line: i32,
+    pub line: u32,
 }
 
 pub fn initScanner<'a>(source: &'a str) -> Scanner<'a> {
@@ -57,7 +58,7 @@ fn isDigit(c: char) -> bool {
     c >= '0' && c <= '9'
 }
 
-pub fn scanToken<'a>(scanner: &'a mut Scanner) -> Token<'a> {
+pub fn scanToken<'a>(scanner: &mut Scanner<'a>) -> Token<'a> {
     skipWhitespace(scanner);
 
     scanner.start = &scanner.start[scanner.current..scanner.start.len()];
@@ -167,7 +168,7 @@ fn skipWhitespace(scanner: &mut Scanner) {
     }
 }
 
-fn scanNumber<'a>(scanner: &'a mut Scanner) -> Token<'a> {
+fn scanNumber<'a>(scanner: &mut Scanner<'a>) -> Token<'a> {
     while isDigit(peek(scanner)) {
         advance(scanner);
     }
@@ -231,7 +232,7 @@ fn identifierType(scanner: &Scanner) -> TokenType {
     TokenType::IDENTIFIER
 }
 
-fn scanIdentifier<'a>(scanner: &'a mut Scanner) -> Token<'a> {
+fn scanIdentifier<'a>(scanner: &mut Scanner<'a>) -> Token<'a> {
     while isAlpha(peek(scanner)) || isDigit(peek(scanner)) {
         advance(scanner);
     }
@@ -240,7 +241,7 @@ fn scanIdentifier<'a>(scanner: &'a mut Scanner) -> Token<'a> {
     makeToken(scanner, idType)
 }
 
-fn scanString<'a>(scanner: &'a mut Scanner) -> Token<'a> {
+fn scanString<'a>(scanner: &mut Scanner<'a>) -> Token<'a> {
     while peek(scanner) != '"' && !isAtEnd(scanner) {
         if peek(scanner) == '\n' { scanner.line += 1; }
         advance(scanner);
@@ -255,7 +256,7 @@ fn scanString<'a>(scanner: &'a mut Scanner) -> Token<'a> {
     makeToken(scanner, TokenType::STRING)
 }
 
-fn makeToken<'a>(scanner: &'a Scanner, token_type: TokenType) -> Token<'a> {
+pub fn makeToken<'a>(scanner: &Scanner<'a>, token_type: TokenType) -> Token<'a> {
     Token {
         token_type,
         start: &scanner.start[0..scanner.current],

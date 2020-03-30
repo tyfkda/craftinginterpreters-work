@@ -4,7 +4,7 @@ use num_derive::FromPrimitive;
 
 use super::value::{Value, ValueArray, initValueArray, writeValueArray};
 
-#[derive(FromPrimitive)]
+#[derive(Clone, Copy, Debug, FromPrimitive)]
 pub enum OpCode {
     CONSTANT,
     ADD,

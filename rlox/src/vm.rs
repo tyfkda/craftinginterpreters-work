@@ -2,11 +2,12 @@
 
 use num_traits::FromPrimitive;
 
-use super::chunk::{Chunk, OpCode};
+use super::chunk::{initChunk, Chunk, OpCode};
 use super::compiler::{compile};
 use super::debug::{disassembleInstruction, printValue};
 use super::value::Value;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InterpretResult {
     OK,
     COMPILE_ERROR,
@@ -23,8 +24,19 @@ struct VM<'a> {
 }
 
 pub fn interpret<'a>(source: &'a str) -> InterpretResult {
-    compile(source);
-    InterpretResult::OK
+    let mut chunk = initChunk();
+    if !compile(source, &mut chunk) {
+        return InterpretResult::COMPILE_ERROR;
+    }
+
+    let mut vm = VM {
+        chunk: &chunk,
+        ip: &chunk.code,
+        stack: [0.0; STACK_MAX],
+        stackTop: 0,
+    };
+
+    run(&mut vm)
 }
 
 fn resetStack(vm: &mut VM) {

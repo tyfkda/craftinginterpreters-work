@@ -5,6 +5,7 @@ use num_traits::FromPrimitive;
 
 use super::chunk::{addConstant, writeChunk, Chunk, OpCode};
 use super::debug::disassembleChunk;
+use super::object::{copyString, Obj, ObjTrait};
 use super::scanner::{initScanner, makeToken, scanToken, Scanner, Token, TokenType};
 use super::value::Value;
 
@@ -166,6 +167,11 @@ fn number<'a>(parser: &mut Parser<'a>) {
     emitConstant(parser, Value::NUMBER(value));
 }
 
+fn string<'a>(parser: &mut Parser<'a>) {
+    let s = copyString(&parser.previous.start[1..], parser.previous.start.len() - 2);
+    emitConstant(parser, Obj::VAL(s));
+}
+
 fn unary<'a>(parser: &mut Parser<'a>) {
     let operatorType = parser.previous.token_type;
 
@@ -200,7 +206,7 @@ const rules: [ParseRule; 40] = [
     ParseRule { prefix: None,           infix: Some(binary),  precedence: Precedence::COMPARISON }, // TOKEN_LESS
     ParseRule { prefix: None,           infix: Some(binary),  precedence: Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_IDENTIFIER
-    ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_STRING
+    ParseRule { prefix: Some(string),   infix: None,          precedence: Precedence::NONE },       // TOKEN_STRING
     ParseRule { prefix: Some(number),   infix: None,          precedence: Precedence::NONE },       // TOKEN_NUMBER
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_AND
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_CLASS

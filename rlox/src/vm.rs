@@ -6,6 +6,7 @@ use std::mem::MaybeUninit;
 use super::chunk::{initChunk, Chunk, OpCode};
 use super::compiler::{compile};
 use super::debug::{disassembleInstruction};
+use super::object::*;
 use super::value::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -74,8 +75,18 @@ fn isFalsey(value: &Value) -> bool {
     AS_BOOL(value).map_or_else(|| IS_NIL(value), |b| !b)
 }
 
+fn concatenate(vm: &mut VM) {
+    let b = AS_STRING(peek(vm, 0)).unwrap();
+    let a = AS_STRING(peek(vm, 1)).unwrap();
+
+    let result = format!("{}{}", a.s, b.s);
+    pop(vm);
+    pop(vm);
+    push(vm, Obj::VAL(takeString(result)));
+}
+
 fn binary_op(vm: &mut VM, op: fn(f64, f64) -> Value) -> Result<(), InterpretError> {
-    if AS_NUMBER(peek(vm, 0)).is_none() || AS_NUMBER(peek(vm, 1)).is_none() {
+    if !IS_NUMBER(peek(vm, 0)) || IS_NUMBER(peek(vm, 1)) {
         runtimeError(vm, "Operands must be numbers.");
         return Err(InterpretError::RUNTIME_ERROR);
     }
@@ -119,7 +130,16 @@ fn run(vm: &mut VM) -> Result<(), InterpretError> {
             OpCode::GREATER => { binary_op(vm, |a, b| Value::BOOL(a > b))?; }
             OpCode::LESS => { binary_op(vm, |a, b| Value::BOOL(a < b))?; }
 
-            OpCode::ADD => { binary_op(vm, |a, b| Value::NUMBER(a + b))?; }
+            OpCode::ADD => {
+                if IS_STRING(peek(vm, 0)) && IS_STRING(peek(vm, 1)) {
+                    concatenate(vm);
+                } else if IS_NUMBER(peek(vm, 0)) || IS_NUMBER(peek(vm, 1)) {
+                    binary_op(vm, |a, b| Value::NUMBER(a + b))?;
+                } else {
+                    runtimeError(vm, "Operands must be two numbers or two strings.");
+                    return Err(InterpretError::RUNTIME_ERROR);
+                }
+            }
             OpCode::SUBTRACT => { binary_op(vm, |a, b| Value::NUMBER(a - b))?; }
             OpCode::MULTIPLY => { binary_op(vm, |a, b| Value::NUMBER(a * b))?; }
             OpCode::DIVIDE => { binary_op(vm, |a, b| Value::NUMBER(a / b))?; }

@@ -1,10 +1,13 @@
 #![allow(non_snake_case)]
 
+use super::object::{printObject, Obj, ObjString, ObjTrait};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     BOOL(bool),
     NIL,
     NUMBER(f64),
+    OBJ(Obj)
 }
 
 pub fn AS_BOOL(value: &Value) -> Option<bool> {
@@ -28,6 +31,28 @@ pub fn AS_NUMBER(value: &Value) -> Option<f64> {
         Some(*n)
     } else {
         None
+    }
+}
+
+pub fn IS_NUMBER(value: &Value) -> bool {
+    AS_NUMBER(value).is_some()
+}
+
+pub fn AS_OBJ(value: &Value) -> Option<&Obj> {
+    if let Value::OBJ(obj) = value {
+        Some(obj)
+    } else {
+        None
+    }
+}
+
+pub fn IS_OBJ(value: &Value) -> bool {
+    AS_OBJ(value).is_some()
+}
+
+impl ObjTrait<ObjString> for Obj {
+    fn VAL(object: ObjString) -> Value {
+        Value::OBJ(Obj::STRING(object))
     }
 }
 
@@ -60,5 +85,6 @@ pub fn printValue(value: &Value) {
         Value::BOOL(b)   => { print!("{}", b); }
         Value::NIL       => { print!("nil"); }
         Value::NUMBER(n) => { print!("{}", n); }
+        Value::OBJ(obj)  => { printObject(obj); }
     }
 }

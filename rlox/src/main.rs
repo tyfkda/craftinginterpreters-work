@@ -9,6 +9,7 @@ use std::io::{self, BufRead, Write};
 mod chunk;
 mod compiler;
 mod debug;
+mod object;
 mod scanner;
 mod value;
 mod vm;

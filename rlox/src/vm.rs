@@ -1,11 +1,12 @@
 #![allow(non_camel_case_types, non_snake_case)]
 
 use num_traits::FromPrimitive;
+use std::mem::MaybeUninit;
 
 use super::chunk::{initChunk, Chunk, OpCode};
 use super::compiler::{compile};
-use super::debug::{disassembleInstruction, printValue};
-use super::value::Value;
+use super::debug::{disassembleInstruction};
+use super::value::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InterpretError {
@@ -28,10 +29,13 @@ pub fn interpret<'a>(source: &'a str) -> Result<(), InterpretError> {
         return Err(InterpretError::COMPILE_ERROR);
     }
 
+    let stack: [MaybeUninit<Value>; STACK_MAX] = unsafe { MaybeUninit::uninit().assume_init() };
+    let stack: [Value; STACK_MAX] = unsafe { std::mem::transmute::<_, [Value; STACK_MAX]>(stack) };
+
     let mut vm = VM {
         chunk: &chunk,
         ip: &chunk.code,
-        stack: [0.0; STACK_MAX],
+        stack,
         stackTop: 0,
     };
 
@@ -42,20 +46,44 @@ fn resetStack(vm: &mut VM) {
     vm.stackTop = 0;
 }
 
+fn runtimeError(vm: &mut VM, message: &str) {
+    eprintln!("{}", message);
+
+    let instruction = unsafe { (&vm.ip[0] as *const u8).offset_from(&vm.chunk.code[0] as *const u8) - 1 } as usize;
+    let line = vm.chunk.lines[instruction];
+    eprintln!("[line {}] in script\n", line);
+
+    resetStack(vm);
+}
+
 fn push(vm: &mut VM, value: Value) {
     vm.stack[vm.stackTop] = value;
     vm.stackTop += 1;
 }
 
-fn pop(vm: &mut VM) -> Value {
+fn pop<'a>(vm: &'a mut VM) -> &'a Value {
     vm.stackTop -= 1;
-    vm.stack[vm.stackTop]
+    &vm.stack[vm.stackTop]
 }
 
-fn binary_op(vm: &mut VM, op: fn(Value, Value) -> Value) {
-    let b = pop(vm);
-    let a = pop(vm);
-    push(vm, op(a, b));
+fn peek<'a>(vm: &'a VM, distance: usize) -> &'a Value {
+    &vm.stack[vm.stackTop - distance - 1]
+}
+
+fn isFalsey(value: &Value) -> bool {
+    AS_BOOL(value).map_or_else(|| IS_NIL(value), |b| !b)
+}
+
+fn binary_op(vm: &mut VM, op: fn(f64, f64) -> f64) -> Result<(), InterpretError> {
+    if AS_NUMBER(peek(vm, 0)).is_none() || AS_NUMBER(peek(vm, 1)).is_none() {
+        runtimeError(vm, "Operands must be numbers.");
+        return Err(InterpretError::RUNTIME_ERROR);
+    }
+
+    let b = AS_NUMBER(pop(vm)).unwrap();
+    let a = AS_NUMBER(pop(vm)).unwrap();
+    push(vm, Value::NUMBER(op(a, b)));
+    Ok(())
 }
 
 fn run(vm: &mut VM) -> Result<(), InterpretError> {
@@ -63,7 +91,7 @@ fn run(vm: &mut VM) -> Result<(), InterpretError> {
         print!("          ");
         for i in 0..vm.stackTop {
             print!("[ ");
-            printValue(vm.stack[i]);
+            printValue(&vm.stack[i]);
             print!(" ]");
         }
         print!("\n");
@@ -72,19 +100,31 @@ fn run(vm: &mut VM) -> Result<(), InterpretError> {
         let instruction = FromPrimitive::from_u8(READ_BYTE(vm)).unwrap();
         match instruction {
             OpCode::CONSTANT => {
-                let constant = READ_CONSTANT(vm);
+                let constant = READ_CONSTANT(vm).clone();
                 push(vm, constant);
             }
-            OpCode::ADD => { binary_op(vm, |a, b| a + b); }
-            OpCode::SUBTRACT => { binary_op(vm, |a, b| a - b); }
-            OpCode::MULTIPLY => { binary_op(vm, |a, b| a * b); }
-            OpCode::DIVIDE => { binary_op(vm, |a, b| a / b); }
+            OpCode::NIL => { push(vm, Value::NIL); }
+            OpCode::TRUE => { push(vm, Value::BOOL(true)); }
+            OpCode::FALSE => { push(vm, Value::BOOL(false)); }
+            OpCode::ADD => { binary_op(vm, |a, b| a + b)?; }
+            OpCode::SUBTRACT => { binary_op(vm, |a, b| a - b)?; }
+            OpCode::MULTIPLY => { binary_op(vm, |a, b| a * b)?; }
+            OpCode::DIVIDE => { binary_op(vm, |a, b| a / b)?; }
+            OpCode::NOT => {
+                let b = isFalsey(pop(vm));
+                push(vm, Value::BOOL(b));
+            }
             OpCode::NEGATE => {
-                let v = pop(vm);
-                push(vm, -v);
+                if let Some(v) = AS_NUMBER(peek(vm, 0)) {
+                    pop(vm);
+                    push(vm, Value::NUMBER(-v));
+                } else {
+                    runtimeError(vm, "Operand must be a number.");
+                    return Err(InterpretError::RUNTIME_ERROR);
+                }
             }
             OpCode::RETURN => {
-                printValue(pop(vm));
+                printValue(&pop(vm));
                 print!("\n");
                 return Ok(())
             }
@@ -98,7 +138,7 @@ fn READ_BYTE(vm: &mut VM) -> u8 {
     result
 }
 
-fn READ_CONSTANT(vm: &mut VM) -> Value {
+fn READ_CONSTANT<'a>(vm: &'a mut VM) -> &'a Value {
     let index = READ_BYTE(vm);
-    vm.chunk.constants.values[index as usize]
+    &vm.chunk.constants.values[index as usize]
 }

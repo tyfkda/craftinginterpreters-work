@@ -3,7 +3,7 @@
 use num_traits::FromPrimitive;
 
 use super::chunk::{Chunk, OpCode};
-use super::value::Value;
+use super::value::printValue;
 
 pub fn disassembleChunk(chunk: &Chunk, name: &str) {
     println!("== {} ==", name);
@@ -27,6 +27,15 @@ pub fn disassembleInstruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::CONSTANT => {
             constantInstruction("OP_CONSTANT", chunk, offset)
         }
+        OpCode::NIL => {
+            simpleInstruction("OP_NIL", offset)
+        }
+        OpCode::TRUE => {
+            simpleInstruction("OP_TRUE", offset)
+        }
+        OpCode::FALSE => {
+            simpleInstruction("OP_FALSE", offset)
+        }
         OpCode::ADD => {
             simpleInstruction("OP_ADD", offset)
         }
@@ -38,6 +47,9 @@ pub fn disassembleInstruction(chunk: &Chunk, offset: usize) -> usize {
         }
         OpCode::DIVIDE => {
             simpleInstruction("OP_DIVIDE", offset)
+        }
+        OpCode::NOT => {
+            simpleInstruction("OP_NOT", offset)
         }
         OpCode::NEGATE => {
             simpleInstruction("OP_NEGATE", offset)
@@ -56,11 +68,7 @@ fn simpleInstruction(name: &str, offset: usize) -> usize {
 fn constantInstruction(name: &str, chunk: &Chunk, offset: usize) -> usize {
     let constant = chunk.code[offset + 1];
     print!("{:-16} {:4} '", name, constant);
-    printValue(chunk.constants.values[constant as usize]);
+    printValue(&chunk.constants.values[constant as usize]);
     println!("'");
     offset + 2
-}
-
-pub fn printValue(value: Value) {
-    print!("{}", value);
 }

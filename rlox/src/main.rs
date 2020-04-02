@@ -1,3 +1,5 @@
+#![feature(ptr_offset_from)]
+
 #![allow(non_snake_case)]
 
 use std::env;

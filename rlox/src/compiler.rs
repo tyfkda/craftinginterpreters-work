@@ -141,6 +141,15 @@ fn binary<'a>(parser: &mut Parser<'a>) {
     }
 }
 
+fn literal<'a>(parser: &mut Parser<'a>) {
+    match parser.previous.token_type {
+        TokenType::FALSE => { emitByte(parser, OpCode::FALSE as u8); }
+        TokenType::NIL   => { emitByte(parser, OpCode::NIL as u8); }
+        TokenType::TRUE  => { emitByte(parser, OpCode::TRUE as u8); }
+        _ => { return; }
+    }
+}
+
 fn grouping<'a>(parser: &mut Parser<'a>) {
     expression(parser);
     consume(parser, TokenType::RIGHT_PAREN, "Expect ')' after expression.");
@@ -148,7 +157,7 @@ fn grouping<'a>(parser: &mut Parser<'a>) {
 
 fn number<'a>(parser: &mut Parser<'a>) {
     let value = parser.previous.start.parse::<f64>().unwrap();
-    emitConstant(parser, value);
+    emitConstant(parser, Value::NUMBER(value));
 }
 
 fn unary<'a>(parser: &mut Parser<'a>) {
@@ -158,6 +167,7 @@ fn unary<'a>(parser: &mut Parser<'a>) {
     parsePrecedence(parser, Precedence::UNARY);
 
     match operatorType {
+        TokenType::BANG  => { emitByte(parser, OpCode::NOT as u8); }
         TokenType::MINUS => { emitByte(parser, OpCode::NEGATE as u8); }
         _ => { return; }
     }
@@ -175,7 +185,7 @@ const rules: [ParseRule; 40] = [
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_SEMICOLON
     ParseRule { prefix: None,           infix: Some(binary),  precedence: Precedence::FACTOR },     // TOKEN_SLASH
     ParseRule { prefix: None,           infix: Some(binary),  precedence: Precedence::FACTOR },     // TOKEN_STAR
-    ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_BANG
+    ParseRule { prefix: Some(unary),    infix: None,          precedence: Precedence::NONE },       // TOKEN_BANG
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_BANG_EQUAL
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_EQUAL
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_EQUAL_EQUAL
@@ -189,17 +199,17 @@ const rules: [ParseRule; 40] = [
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_AND
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_CLASS
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_ELSE
-    ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_FALSE
+    ParseRule { prefix: Some(literal),  infix: None,          precedence: Precedence::NONE },       // TOKEN_FALSE
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_FOR
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_FUN
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_IF
-    ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_NIL
+    ParseRule { prefix: Some(literal),  infix: None,          precedence: Precedence::NONE },       // TOKEN_NIL
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_OR
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_PRINT
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_RETURN
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_SUPER
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_THIS
-    ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_TRUE
+    ParseRule { prefix: Some(literal),  infix: None,          precedence: Precedence::NONE },       // TOKEN_TRUE
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_VAR
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_WHILE
     ParseRule { prefix: None,           infix: None,          precedence: Precedence::NONE },       // TOKEN_ERROR

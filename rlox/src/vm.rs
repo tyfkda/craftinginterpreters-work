@@ -74,7 +74,7 @@ fn isFalsey(value: &Value) -> bool {
     AS_BOOL(value).map_or_else(|| IS_NIL(value), |b| !b)
 }
 
-fn binary_op(vm: &mut VM, op: fn(f64, f64) -> f64) -> Result<(), InterpretError> {
+fn binary_op(vm: &mut VM, op: fn(f64, f64) -> Value) -> Result<(), InterpretError> {
     if AS_NUMBER(peek(vm, 0)).is_none() || AS_NUMBER(peek(vm, 1)).is_none() {
         runtimeError(vm, "Operands must be numbers.");
         return Err(InterpretError::RUNTIME_ERROR);
@@ -82,7 +82,7 @@ fn binary_op(vm: &mut VM, op: fn(f64, f64) -> f64) -> Result<(), InterpretError>
 
     let b = AS_NUMBER(pop(vm)).unwrap();
     let a = AS_NUMBER(pop(vm)).unwrap();
-    push(vm, Value::NUMBER(op(a, b)));
+    push(vm, op(a, b));
     Ok(())
 }
 
@@ -106,10 +106,23 @@ fn run(vm: &mut VM) -> Result<(), InterpretError> {
             OpCode::NIL => { push(vm, Value::NIL); }
             OpCode::TRUE => { push(vm, Value::BOOL(true)); }
             OpCode::FALSE => { push(vm, Value::BOOL(false)); }
-            OpCode::ADD => { binary_op(vm, |a, b| a + b)?; }
-            OpCode::SUBTRACT => { binary_op(vm, |a, b| a - b)?; }
-            OpCode::MULTIPLY => { binary_op(vm, |a, b| a * b)?; }
-            OpCode::DIVIDE => { binary_op(vm, |a, b| a / b)?; }
+
+            OpCode::EQUAL => {
+                let b = peek(vm, 0);
+                let a = peek(vm, 1);
+                let result = valuesEqual(a, b);
+                pop(vm);
+                pop(vm);
+                push(vm, Value::BOOL(result));
+            }
+
+            OpCode::GREATER => { binary_op(vm, |a, b| Value::BOOL(a > b))?; }
+            OpCode::LESS => { binary_op(vm, |a, b| Value::BOOL(a < b))?; }
+
+            OpCode::ADD => { binary_op(vm, |a, b| Value::NUMBER(a + b))?; }
+            OpCode::SUBTRACT => { binary_op(vm, |a, b| Value::NUMBER(a - b))?; }
+            OpCode::MULTIPLY => { binary_op(vm, |a, b| Value::NUMBER(a * b))?; }
+            OpCode::DIVIDE => { binary_op(vm, |a, b| Value::NUMBER(a / b))?; }
             OpCode::NOT => {
                 let b = isFalsey(pop(vm));
                 push(vm, Value::BOOL(b));

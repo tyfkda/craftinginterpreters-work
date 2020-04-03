@@ -36,6 +36,15 @@ pub fn disassembleInstruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::FALSE => {
             simpleInstruction("OP_FALSE", offset)
         }
+        OpCode::EQUAL => {
+            simpleInstruction("OP_EQUAL", offset)
+        }
+        OpCode::GREATER => {
+            simpleInstruction("OP_GREATER", offset)
+        }
+        OpCode::LESS => {
+            simpleInstruction("OP_LESS", offset)
+        }
         OpCode::ADD => {
             simpleInstruction("OP_ADD", offset)
         }

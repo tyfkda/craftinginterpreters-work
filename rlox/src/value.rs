@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     BOOL(bool),
     NIL,
@@ -39,6 +39,10 @@ impl ValueArray {
     pub fn count(&self) -> usize {
         self.values.len()
     }
+}
+
+pub fn valuesEqual(a: &Value, b: &Value) -> bool {
+    *a == *b
 }
 
 pub fn initValueArray() -> ValueArray {
